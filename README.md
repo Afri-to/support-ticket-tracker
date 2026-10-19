@@ -42,6 +42,29 @@ Each row goes through these checks, in order:
 
 Columns can come in any order and any letter case, an Excel UTF-8 BOM is handled, and files over 5 MB are refused. `GET /imports` lists past uploads with their counts.
 
+## KPIs
+
+| Endpoint | Returns |
+|---|---|
+| `GET /kpis/summary` | Total and open tickets, average and median hours to resolve |
+| `GET /kpis/weekly` | Tickets opened and closed per week (weeks start Monday), average hours to resolve |
+| `GET /kpis/root-causes` | Most common root causes with their share of all tickets (`limit`, default 5) |
+| `GET /kpis/agents` | Tickets, open tickets and average hours to resolve per agent |
+| `GET /agents` | Agents for the dashboard filter |
+
+All KPI endpoints take the same optional filters: `agent_id`, `from` and `to` (dates, inclusive). The queries are plain SQL in [`backend/app/kpis.py`](backend/app/kpis.py), using `COUNT(*) FILTER`, `PERCENTILE_CONT` for the median, `DATE_TRUNC('week', ...)` and a window function for each root cause's share. Values are always bound parameters.
+
+### Schema
+
+```
+agents (id, name)            categories (id, name)
+   \                             /
+    tickets (ticket_id UNIQUE, agent_id, category_id, root_cause, priority,
+             opened_at, closed_at  CHECK closed_at >= opened_at, import_id)
+                                  |
+                       imports (filename, created_at, row counts)
+```
+
 ## Run the tests
 
 ```bash
@@ -57,7 +80,7 @@ Tests need PostgreSQL with a `tickets_test` database (set `TEST_DATABASE_URL` if
 
 - [x] Fake dataset generator with deliberately messy rows
 - [x] CSV upload: validate, deduplicate, and report what was imported
-- [ ] Database schema and KPI queries (weekly volume, time to resolve, root causes, per-agent volume)
+- [x] Database schema and KPI queries (weekly volume, time to resolve, root causes, per-agent volume)
 - [ ] React dashboard with week and agent filters
 - [ ] Login so each user sees only their own uploads
 - [ ] End-to-end test with Playwright

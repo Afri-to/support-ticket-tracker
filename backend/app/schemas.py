@@ -1,6 +1,7 @@
 """Response models for the API."""
 
-from datetime import datetime
+from datetime import date, datetime
+from decimal import Decimal
 
 from pydantic import BaseModel, ConfigDict
 
@@ -42,3 +43,39 @@ class ImportOut(BaseModel):
     duplicates: int
     already_imported: int
     invalid: int
+
+
+class AgentOut(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
+    id: int
+    name: str
+
+
+class SummaryOut(BaseModel):
+    total: int
+    open: int
+    avg_resolve_hours: Decimal | None
+    median_resolve_hours: Decimal | None
+
+
+class WeekOut(BaseModel):
+    week_start: date
+    opened: int
+    closed: int
+    avg_resolve_hours: Decimal | None
+
+
+class RootCauseOut(BaseModel):
+    category: str
+    root_cause: str
+    tickets: int
+    share_pct: Decimal
+
+
+class AgentKpiOut(BaseModel):
+    agent_id: int
+    agent: str
+    tickets: int
+    open: int
+    avg_resolve_hours: Decimal | None
