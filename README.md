@@ -6,10 +6,22 @@ A full-stack app that imports support tickets from CSV exports, cleans them (val
 
 > Status: in progress. See the roadmap below.
 
+![Dashboard](docs/dashboard.png)
+
+## Dashboard
+
+- **Filters** for week and agent sit in one row above everything they affect.
+- **Headline numbers:** tickets, still open, average and median time to resolve.
+- **Four charts:** tickets opened and closed per week, average time to resolve per week, top root causes, and tickets per agent. Charts that compare weeks or agents keep showing all of them and highlight your selection instead of hiding the rest.
+- **Every chart has a "Show table" view**, so no number is locked inside a picture.
+- **Ticket table** with search (debounced, so it waits until you stop typing) and paging.
+- **CSV import** that reports exactly what happened to each row.
+- Light and dark mode, keyboard focus styles, works on phones.
+
 ## Tech stack
 
 Backend: Python 3.12 · FastAPI · PostgreSQL · SQLAlchemy · pytest · GitHub Actions
-Frontend (coming next): React · TypeScript · Vite
+Frontend: React · TypeScript · Vite · Recharts · Vitest + Testing Library
 
 ## Sample data
 
@@ -65,6 +77,18 @@ agents (id, name)            categories (id, name)
                        imports (filename, created_at, row counts)
 ```
 
+## Run it locally
+
+```bash
+# API (needs PostgreSQL with a "tickets" database)
+cd backend && uvicorn app.main:app --reload --port 8000
+
+# Dashboard, in a second terminal (forwards /api to the API)
+cd frontend && npm install && npm run dev
+```
+
+Open http://localhost:5173 and import `data/sample_tickets.csv`.
+
 ## Run the tests
 
 ```bash
@@ -72,6 +96,8 @@ cd backend
 python -m venv .venv && source .venv/bin/activate
 pip install -r requirements-dev.txt
 pytest -v
+
+cd ../frontend && npm test
 ```
 
 Tests need PostgreSQL with a `tickets_test` database (set `TEST_DATABASE_URL` if your connection differs from `postgresql+psycopg://postgres:postgres@localhost:5432/tickets_test`). CI runs them against a PostgreSQL service container.
@@ -81,7 +107,7 @@ Tests need PostgreSQL with a `tickets_test` database (set `TEST_DATABASE_URL` if
 - [x] Fake dataset generator with deliberately messy rows
 - [x] CSV upload: validate, deduplicate, and report what was imported
 - [x] Database schema and KPI queries (weekly volume, time to resolve, root causes, per-agent volume)
-- [ ] React dashboard with week and agent filters
+- [x] React dashboard with week and agent filters
 - [ ] Login so each user sees only their own uploads
 - [ ] End-to-end test with Playwright
 - [ ] Live deployment
