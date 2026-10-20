@@ -20,6 +20,7 @@ from app.schemas import (
     ImportSummaryOut,
     RootCauseOut,
     SummaryOut,
+    TicketPage,
     WeekOut,
 )
 
@@ -106,3 +107,15 @@ def kpi_root_causes(db: DbSession, f: KpiFilters, limit: Annotated[int, Query(ge
 def kpi_agents(db: DbSession, f: KpiFilters):
     """Ticket volume, open tickets and average hours to resolve per agent."""
     return kpis.agents(db, f)
+
+
+@app.get("/tickets", response_model=TicketPage, tags=["tickets"])
+def list_tickets(
+    db: DbSession,
+    f: KpiFilters,
+    search: Annotated[str | None, Query(max_length=100, description="Ticket ID, agent, category or root cause")] = None,
+    limit: Annotated[int, Query(ge=1, le=100)] = 25,
+    offset: Annotated[int, Query(ge=0)] = 0,
+):
+    """Tickets matching the filters, newest first, with the total count for paging."""
+    return kpis.tickets(db, f, search, limit, offset)

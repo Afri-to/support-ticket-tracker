@@ -79,3 +79,19 @@ class AgentKpiOut(BaseModel):
     tickets: int
     open: int
     avg_resolve_hours: Decimal | None
+
+
+class TicketOut(BaseModel):
+    ticket_id: str
+    agent: str
+    category: str
+    root_cause: str
+    priority: str
+    opened_at: datetime
+    closed_at: datetime | None
+    resolve_hours: Decimal | None
+
+
+class TicketPage(BaseModel):
+    total: int
+    items: list[TicketOut]

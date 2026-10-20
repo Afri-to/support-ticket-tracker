@@ -102,3 +102,40 @@ def root_causes(db: Session, f: Filters, limit: int = 5) -> list[dict]:
 
 def agents(db: Session, f: Filters) -> list[dict]:
     return _rows(db, AGENTS_SQL, f.params())
+
+
+# Search matches ticket ID, agent, category or root cause, case-insensitively.
+TICKETS_WHERE = f"""
+FROM tickets t
+JOIN agents a ON a.id = t.agent_id
+JOIN categories c ON c.id = t.category_id
+WHERE {FILTERS}
+  AND (CAST(:search AS text) IS NULL
+       OR t.ticket_id ILIKE :pattern OR a.name ILIKE :pattern
+       OR c.name ILIKE :pattern OR t.root_cause ILIKE :pattern)
+"""
+
+TICKETS_SQL = f"""
+SELECT t.ticket_id, a.name AS agent, c.name AS category, t.root_cause,
+       t.priority::text AS priority, t.opened_at, t.closed_at,
+       ROUND(({RESOLVE_HOURS})::numeric, 1) AS resolve_hours
+{TICKETS_WHERE}
+ORDER BY t.opened_at DESC, t.ticket_id
+LIMIT :limit OFFSET :offset
+"""
+
+TICKETS_COUNT_SQL = f"SELECT COUNT(*) AS total {TICKETS_WHERE}"
+
+
+def _like_pattern(search: str) -> str:
+    """Escape LIKE wildcards so a search for '50%' matches the text '50%'."""
+    escaped = search.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+    return f"%{escaped}%"
+
+
+def tickets(db: Session, f: Filters, search: str | None, limit: int, offset: int) -> dict:
+    search = (search or "").strip() or None
+    params = {**f.params(), "search": search, "pattern": _like_pattern(search) if search else None}
+    total = _rows(db, TICKETS_COUNT_SQL, params)[0]["total"]
+    items = _rows(db, TICKETS_SQL, {**params, "limit": limit, "offset": offset})
+    return {"total": total, "items": items}

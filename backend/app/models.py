@@ -61,7 +61,10 @@ class Ticket(Base):
     agent_id: Mapped[int] = mapped_column(ForeignKey("agents.id"), index=True)
     category_id: Mapped[int] = mapped_column(ForeignKey("categories.id"), index=True)
     root_cause: Mapped[str] = mapped_column(String(100))
-    priority: Mapped[Priority] = mapped_column(SAEnum(Priority, name="priority"))
+    # values_callable stores "High" (what people read) instead of the name "HIGH".
+    priority: Mapped[Priority] = mapped_column(
+        SAEnum(Priority, name="priority", values_callable=lambda e: [m.value for m in e])
+    )
     opened_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), index=True)
     closed_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     import_id: Mapped[int] = mapped_column(ForeignKey("imports.id"))
