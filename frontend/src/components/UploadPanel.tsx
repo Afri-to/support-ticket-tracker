@@ -7,7 +7,7 @@ const SAMPLE_URL = "https://raw.githubusercontent.com/Afri-to/support-ticket-tra
 const SHOWN_ERRORS = 8;
 
 /** Upload a CSV export and say exactly what happened to its rows. */
-export function UploadPanel({ onImported }: { onImported: () => void }) {
+export function UploadPanel({ onImported, readOnly = false }: { onImported: () => void; readOnly?: boolean }) {
   const input = useRef<HTMLInputElement>(null);
   const [file, setFile] = useState<File | null>(null);
   const [busy, setBusy] = useState(false);
@@ -42,6 +42,9 @@ export function UploadPanel({ onImported }: { onImported: () => void }) {
           </p>
         </div>
       </div>
+      {readOnly ? (
+        <p className="muted">The demo account is read-only. Sign out and create a free account to import your own file.</p>
+      ) : (
       <div className="upload">
         <label>
           <span className="sr-only">CSV file</span>
@@ -51,6 +54,7 @@ export function UploadPanel({ onImported }: { onImported: () => void }) {
           {busy ? "Importing…" : "Import CSV"}
         </button>
       </div>
+      )}
       {error && <p className="error-text" role="alert">Import failed: {error}</p>}
       {result && (
         <div className="result" role="status">

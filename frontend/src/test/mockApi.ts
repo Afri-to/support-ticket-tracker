@@ -12,7 +12,7 @@ export function mockFetch(routes: Record<string, unknown>) {
       .find((k) => path.startsWith(k));
     if (!key) return new Response(JSON.stringify({ detail: "Not found" }), { status: 404 });
     const body = routes[key];
-    if (body instanceof Response) return body;
+    if (body instanceof Response) return body.clone();
     return new Response(JSON.stringify(body), { status: 200, headers: { "Content-Type": "application/json" } });
   });
   vi.stubGlobal("fetch", fetchMock);
@@ -48,8 +48,12 @@ export const sample = {
   },
 };
 
+export const unauthorized = () =>
+  new Response(JSON.stringify({ detail: "Sign in to continue." }), { status: 401 });
+
 export function dashboardRoutes(overrides: Record<string, unknown> = {}) {
   return {
+    "/auth/me": { email: "tester@example.com", is_demo: false },
     "/agents": sample.agents,
     "/kpis/summary": sample.summary,
     "/kpis/weekly": sample.weekly,

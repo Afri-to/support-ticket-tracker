@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
-import { api } from "./api";
-import type { Agent, AgentKpi, Filters, RootCause, Summary, Week } from "./types";
+import { ApiError, api, setSignedOutHandler } from "./api";
+import type { Agent, AgentKpi, Filters, RootCause, Summary, User, Week } from "./types";
+import { SignIn } from "./components/SignIn";
 import { FilterBar } from "./components/FilterBar";
 import { StatTiles } from "./components/StatTiles";
 import { AgentsChart, ResolveTimeChart, RootCausesChart, WeeklyVolumeChart } from "./components/Charts";
@@ -14,7 +15,43 @@ interface Dashboard {
   agentKpis: AgentKpi[];
 }
 
+/** Checks who is signed in, then shows the sign-in screen or the dashboard. */
 export default function App() {
+  const [user, setUser] = useState<User | null | undefined>(undefined); // undefined = still checking
+  const [startupError, setStartupError] = useState<string | null>(null);
+
+  const checkSession = useCallback(() => {
+    setStartupError(null);
+    api
+      .me()
+      .then(setUser)
+      .catch((e: ApiError) => (e.status === 401 ? setUser(null) : setStartupError(e.message)));
+  }, []);
+
+  useEffect(() => {
+    setSignedOutHandler(() => setUser(null));
+    checkSession();
+  }, [checkSession]);
+
+  if (startupError)
+    return (
+      <div className="shell">
+        <p className="error-text" role="alert">{startupError}</p>
+        <button type="button" className="primary" onClick={checkSession}>Try again</button>
+      </div>
+    );
+  if (user === undefined) return <div className="shell"><p className="muted">Loading…</p></div>;
+  if (user === null) return <div className="shell"><SignIn onSignedIn={setUser} /></div>;
+
+  const signOut = async () => {
+    await api.logout();
+    setUser(null);
+  };
+  // key: a different account starts with fresh filters and data
+  return <Dashboard key={user.email} user={user} onSignOut={signOut} />;
+}
+
+function Dashboard({ user, onSignOut }: { user: User; onSignOut: () => void }) {
   const [filters, setFilters] = useState<Filters>({ agentId: null, week: null });
   const [agents, setAgents] = useState<Agent[]>([]);
   const [allWeeks, setAllWeeks] = useState<Week[]>([]);
@@ -54,7 +91,11 @@ export default function App() {
           <h1>Support Ticket Tracker</h1>
           <p>Weekly support KPIs from imported ticket exports. All data is fake.</p>
         </div>
-        <a href={`${import.meta.env.VITE_API_URL ?? "/api"}/docs`} className="link-button">API docs</a>
+        <div className="account">
+          <a href={`${import.meta.env.VITE_API_URL ?? "/api"}/docs`} className="link-button">API docs</a>
+          <span className="muted">{user.is_demo ? "Demo account (read-only)" : user.email}</span>
+          <button type="button" className="link-button" onClick={onSignOut}>Sign out</button>
+        </div>
       </header>
 
       {error && <p className="error-text" role="alert">{error}</p>}
@@ -62,7 +103,7 @@ export default function App() {
       {empty ? (
         <>
           <div className="notice">No tickets yet. Import a CSV below, or start with the sample file, to see the dashboard.</div>
-          <UploadPanel onImported={onImported} />
+          <UploadPanel onImported={onImported} readOnly={user.is_demo} />
         </>
       ) : (
         <>
@@ -80,7 +121,7 @@ export default function App() {
           )}
           <TicketTable filters={filters} refreshKey={refreshKey} />
           <div style={{ height: 16 }} />
-          <UploadPanel onImported={onImported} />
+          <UploadPanel onImported={onImported} readOnly={user.is_demo} />
         </>
       )}
     </div>

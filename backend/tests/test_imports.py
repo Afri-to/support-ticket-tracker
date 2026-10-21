@@ -121,5 +121,5 @@ def test_sample_file_end_to_end(client):
     assert body["imported"] > 4700
 
 
-def test_health(client):
-    assert client.get("/health").json() == {"status": "ok"}
+def test_health(anon):
+    assert anon.get("/health").json() == {"status": "ok"}

@@ -4,7 +4,7 @@ Order of checks for each row:
   1. Validate it (missing fields, bad dates, unknown priority, ...).
   2. Drop it if it's an exact copy of an earlier row in the same file.
   3. Reject it if it reuses an earlier row's ticket_id with different values.
-  4. Skip it if that ticket_id was already imported from an earlier file.
+  4. Skip it if this user already imported that ticket_id from an earlier file.
 """
 
 import csv
@@ -59,19 +59,20 @@ def read_rows(content: bytes) -> list[dict[str, str]]:
     return list(reader)
 
 
-def _get_or_create(db: Session, model, names: set[str]) -> dict[str, int]:
-    """Map each name to its id, inserting any names not seen before."""
-    existing = dict(db.execute(select(model.name, model.id).where(model.name.in_(names))).all())
+def _get_or_create(db: Session, model, user_id: int, names: set[str]) -> dict[str, int]:
+    """Map each of this user's names to its id, inserting any not seen before."""
+    query = select(model.name, model.id).where(model.user_id == user_id, model.name.in_(names))
+    existing = dict(db.execute(query).all())
     new = names - existing.keys()
     if new:
-        db.execute(insert(model), [{"name": n} for n in sorted(new)])
-        existing = dict(db.execute(select(model.name, model.id).where(model.name.in_(names))).all())
+        db.execute(insert(model), [{"user_id": user_id, "name": n} for n in sorted(new)])
+        existing = dict(db.execute(query).all())
     return existing
 
 
-def import_csv(db: Session, filename: str, content: bytes) -> ImportSummary:
+def import_csv(db: Session, user_id: int, filename: str, content: bytes) -> ImportSummary:
     rows = read_rows(content)
-    batch = Import(filename=filename, total_rows=len(rows), imported=0, duplicates=0, already_imported=0, invalid=0)
+    batch = Import(user_id=user_id, filename=filename, total_rows=len(rows), imported=0, duplicates=0, already_imported=0, invalid=0)
     db.add(batch)
     db.flush()  # assigns batch.id
 
@@ -105,15 +106,18 @@ def import_csv(db: Session, filename: str, content: bytes) -> ImportSummary:
         keep.append(ticket)
 
     if keep:
-        already = set(db.scalars(select(Ticket.ticket_id).where(Ticket.ticket_id.in_([t.ticket_id for t in keep]))))
+        already = set(db.scalars(
+            select(Ticket.ticket_id).where(Ticket.user_id == user_id, Ticket.ticket_id.in_([t.ticket_id for t in keep]))
+        ))
         summary.already_imported = len(already)
         keep = [t for t in keep if t.ticket_id not in already]
 
     if keep:
-        agents = _get_or_create(db, Agent, {t.agent for t in keep})
-        categories = _get_or_create(db, Category, {t.category for t in keep})
+        agents = _get_or_create(db, Agent, user_id, {t.agent for t in keep})
+        categories = _get_or_create(db, Category, user_id, {t.category for t in keep})
         db.execute(insert(Ticket), [
             {
+                "user_id": user_id,
                 "ticket_id": t.ticket_id,
                 "agent_id": agents[t.agent],
                 "category_id": categories[t.category],

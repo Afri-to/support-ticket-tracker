@@ -53,5 +53,6 @@ describe("dashboard", () => {
     vi.stubGlobal("fetch", vi.fn(async () => { throw new TypeError("Failed to fetch"); }));
     render(<App />);
     expect((await screen.findAllByRole("alert"))[0]).toHaveTextContent("Couldn't reach the server");
+    expect(screen.getByRole("button", { name: "Try again" })).toBeInTheDocument();
   });
 });

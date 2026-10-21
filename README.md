@@ -18,6 +18,12 @@ A full-stack app that imports support tickets from CSV exports, cleans them (val
 - **CSV import** that reports exactly what happened to each row.
 - Light and dark mode, keyboard focus styles, works on phones.
 
+## Accounts and the demo
+
+- **Create an account** with an email and password, then import your own CSV. Every query is limited to the signed-in user, so nobody sees anyone else's tickets (tests check this directly).
+- **Explore the demo** signs you in to a shared, read-only account already filled with the 4,789 sample tickets, so you can try the dashboard without signing up.
+- Passwords are hashed with scrypt and a random salt per user. Sessions are random tokens in an `HttpOnly`, `SameSite=Lax` cookie, and the database stores only a SHA-256 hash of each token. A wrong email and a wrong password get the same answer, so the login form doesn't reveal which emails have accounts.
+
 ## Tech stack
 
 Backend: Python 3.12 · FastAPI · PostgreSQL · SQLAlchemy · pytest · GitHub Actions
@@ -108,6 +114,6 @@ Tests need PostgreSQL with a `tickets_test` database (set `TEST_DATABASE_URL` if
 - [x] CSV upload: validate, deduplicate, and report what was imported
 - [x] Database schema and KPI queries (weekly volume, time to resolve, root causes, per-agent volume)
 - [x] React dashboard with week and agent filters
-- [ ] Login so each user sees only their own uploads
+- [x] Login so each user sees only their own uploads, plus a read-only demo account
 - [ ] End-to-end test with Playwright
 - [ ] Live deployment

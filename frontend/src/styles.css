@@ -115,6 +115,20 @@ button, input, select { font: inherit; color: inherit; }
 .result ul { margin: 6px 0 0; padding-left: 18px; font-size: 13px; color: var(--text-secondary); }
 .error-text { color: var(--critical); margin: 8px 0 0; }
 
+.account { display: flex; align-items: center; gap: 16px; font-size: 14px; flex-wrap: wrap; }
+.small { font-size: 13px; }
+.auth { display: grid; grid-template-columns: 1.1fr 1fr; gap: 48px; align-items: center; min-height: 80vh; }
+.auth-intro h1 { font-size: 32px; line-height: 1.15; margin: 0 0 12px; }
+.auth-intro p { color: var(--text-secondary); max-width: 46ch; }
+.auth-card { display: grid; gap: 14px; max-width: 380px; width: 100%; justify-self: end; padding: 24px; }
+.auth-card h2 { margin: 0; font-size: 20px; }
+.auth-card input { padding: 9px 10px; border: 1px solid var(--border); border-radius: 6px; background: var(--surface); }
+.auth-card .link-button { padding: 0; }
+@media (max-width: 760px) {
+  .auth { grid-template-columns: 1fr; gap: 24px; min-height: 0; padding-top: 32px; }
+  .auth-card { justify-self: stretch; max-width: none; }
+}
+
 .notice { background: var(--surface); border: 1px dashed var(--border); border-radius: 8px; padding: 32px 20px; text-align: center; color: var(--text-secondary); margin-bottom: 16px; }
 .muted { color: var(--text-muted); }
 .sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }

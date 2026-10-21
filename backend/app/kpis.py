@@ -1,7 +1,8 @@
 """KPI queries, written as plain SQL so each one is easy to read and explain.
 
-Every query shares the same optional filters, applied to when a ticket was
-opened: one agent, a start date, and an end date (inclusive). Values are
+Every query is limited to the signed-in user's tickets and shares the same
+optional filters, applied to when a ticket was opened: one agent, a start
+date, and an end date (inclusive). Values are
 always passed as bound parameters, never pasted into the SQL string.
 """
 
@@ -14,7 +15,8 @@ from sqlalchemy.orm import Session
 # CAST(... AS type) IS NULL lets one query serve both "filter" and "no filter":
 # when a parameter is NULL its condition is simply true.
 FILTERS = """
-    (CAST(:agent_id AS integer) IS NULL OR t.agent_id = :agent_id)
+    t.user_id = :user_id
+    AND (CAST(:agent_id AS integer) IS NULL OR t.agent_id = :agent_id)
     AND (CAST(:date_from AS date) IS NULL OR t.opened_at >= CAST(:date_from AS date))
     AND (CAST(:date_to AS date) IS NULL OR t.opened_at < CAST(:date_to AS date) + 1)
 """
@@ -76,12 +78,18 @@ ORDER BY tickets DESC, a.name
 
 @dataclass(frozen=True)
 class Filters:
+    user_id: int
     agent_id: int | None = None
     date_from: date | None = None
     date_to: date | None = None
 
     def params(self) -> dict:
-        return {"agent_id": self.agent_id, "date_from": self.date_from, "date_to": self.date_to}
+        return {
+            "user_id": self.user_id,
+            "agent_id": self.agent_id,
+            "date_from": self.date_from,
+            "date_to": self.date_to,
+        }
 
 
 def _rows(db: Session, sql: str, params: dict) -> list[dict]:

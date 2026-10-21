@@ -70,3 +70,8 @@ export interface Filters {
   agentId: number | null;
   week: string | null; // week_start of the selected week, or null for all weeks
 }
+
+export interface User {
+  email: string;
+  is_demo: boolean;
+}
