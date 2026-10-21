@@ -56,3 +56,27 @@ describe("dashboard", () => {
     expect(screen.getByRole("button", { name: "Try again" })).toBeInTheDocument();
   });
 });
+
+it("keeps the import summary visible after a first import fills the dashboard", async () => {
+  const { default: userEvent } = await import("@testing-library/user-event");
+  let total = 0;
+  const summaryRoute = () => new Response(JSON.stringify({ ...sample.summary, total }), { status: 200 });
+  const routes = dashboardRoutes({
+    "/imports": { import_id: 1, filename: "t.csv", total_rows: 5, imported: 5, duplicates: 0, already_imported: 0, invalid: 0, errors: [] },
+  });
+  const fetchMock = vi.fn(async (input: RequestInfo | URL, init?: RequestInit) => {
+    const path = String(input).replace(/^\/api/, "");
+    if (path.startsWith("/imports")) total = 5;
+    if (path.startsWith("/kpis/summary")) return summaryRoute();
+    const key = Object.keys(routes).sort((a, b) => b.length - a.length).find((k) => path.startsWith(k))!;
+    void init;
+    return new Response(JSON.stringify(routes[key as keyof typeof routes]), { status: 200 });
+  });
+  vi.stubGlobal("fetch", fetchMock);
+  render(<App />);
+  await screen.findByText(/No tickets yet/);
+  await userEvent.upload(screen.getByLabelText("CSV file"), new File(["x"], "t.csv", { type: "text/csv" }));
+  await userEvent.click(screen.getByRole("button", { name: "Import CSV" }));
+  await waitFor(() => expect(screen.queryByText(/No tickets yet/)).not.toBeInTheDocument());
+  expect(screen.getByRole("status")).toHaveTextContent("5 imported");
+});

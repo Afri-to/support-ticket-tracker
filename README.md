@@ -104,7 +104,12 @@ pip install -r requirements-dev.txt
 pytest -v
 
 cd ../frontend && npm test
+
+# End-to-end (real browser, real API, real database "tickets_e2e")
+VITE_API_URL="" npm run build && npm run e2e
 ```
+
+The Playwright tests create an account, import the sample CSV, check the import summary and the dashboard, filter by agent, search the table, re-upload the same file (nothing changes), sign out and back in, and explore the read-only demo. They caught a real bug: the import summary disappeared after a user's first import.
 
 Tests need PostgreSQL with a `tickets_test` database (set `TEST_DATABASE_URL` if your connection differs from `postgresql+psycopg://postgres:postgres@localhost:5432/tickets_test`). CI runs them against a PostgreSQL service container.
 
@@ -115,5 +120,5 @@ Tests need PostgreSQL with a `tickets_test` database (set `TEST_DATABASE_URL` if
 - [x] Database schema and KPI queries (weekly volume, time to resolve, root causes, per-agent volume)
 - [x] React dashboard with week and agent filters
 - [x] Login so each user sees only their own uploads, plus a read-only demo account
-- [ ] End-to-end test with Playwright
+- [x] End-to-end tests with Playwright
 - [ ] Live deployment

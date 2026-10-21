@@ -101,10 +101,7 @@ function Dashboard({ user, onSignOut }: { user: User; onSignOut: () => void }) {
       {error && <p className="error-text" role="alert">{error}</p>}
 
       {empty ? (
-        <>
-          <div className="notice">No tickets yet. Import a CSV below, or start with the sample file, to see the dashboard.</div>
-          <UploadPanel onImported={onImported} readOnly={user.is_demo} />
-        </>
+        <div className="notice">No tickets yet. Import a CSV below, or start with the sample file, to see the dashboard.</div>
       ) : (
         <>
           <FilterBar agents={agents} weeks={allWeeks} filters={filters} onChange={setFilters} />
@@ -121,9 +118,11 @@ function Dashboard({ user, onSignOut }: { user: User; onSignOut: () => void }) {
           )}
           <TicketTable filters={filters} refreshKey={refreshKey} />
           <div style={{ height: 16 }} />
-          <UploadPanel onImported={onImported} readOnly={user.is_demo} />
         </>
       )}
+      {/* One panel in a fixed place, so its import summary survives the switch
+          from the empty state to the dashboard after a first import. */}
+      <UploadPanel onImported={onImported} readOnly={user.is_demo} />
     </div>
   );
 }
